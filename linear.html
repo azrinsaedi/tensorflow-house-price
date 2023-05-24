@@ -16,16 +16,54 @@
                     }
                 )
             }
-            async function run () {
-            const houseSalesDataset = tf.data.csv("http://127.0.0.1:8080/kc_house_data.csv");
-            console.log(await houseSalesDataset.take(10).toArray())
+
+            function normalise(tensor){
+                const min = tensor.min()
+                const max = tensor.max()
+                const normalisedTensor = tensor.sub(min).div(max.sub(min));
+                return {
+                    tensor: normalisedTensor,
+                    min,
+                    max
+                }
             }
 
+            function denormalise(tensor, min, max){
+                const denormalisedTensor = tensor.mul(max.sub(min)).add(min);
+                return denormalisedTensor
+            }
+            async function run () {
+            const houseSalesDataset = tf.data.csv("http://127.0.0.1:8080/kc_house_data.csv");
+            const sampleDataset = houseSalesDataset.take(10);
+            const dataArray = sampleDataset.toArray();
+            console.log(dataArray)
+
             const points = houseSalesDataset.map(record => ({
-                x: record.sqrt_living,
+                x: record.sqft_living,
                 y: record.price,
             }));
             plot(await points.toArray(), "Square feet");
+
+            const featureValues = await points.map(p => p.x).toArray()
+            const featureTensor = tf.tensor2d(featureValues, [featureValues.length, 1])
+
+            const labelValues = await points.map(p => p.y).toArray()
+            const labelTensor = tf.tensor2d(labelValues, [labelValues.length, 1])
+
+            featureTensor.print()
+            labelTensor.print()
+
+            const normaliseFeature = normalise(featureTensor)
+            const normaliseLabel = normalise(labelTensor)
+
+            normaliseFeature.tensor.print()
+            normaliseLabel.tensor.print()
+
+            denormalise(normaliseFeature.tensor, normaliseFeature.min, normaliseFeature.max).print()
+
+            }
+
+
             run()
         </script>
     </body>
