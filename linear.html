@@ -32,6 +32,19 @@
                 const denormalisedTensor = tensor.mul(max.sub(min)).add(min);
                 return denormalisedTensor
             }
+
+            function createModel() {
+                const model = tf.sequential();
+
+                model.add(tf.layer.dense({
+                    units: 1,
+                    useBias: true,
+                    activattion: 'linear',
+                    inputDim: 1,
+                }))
+
+                return model;
+            }
             async function run () {
             const houseSalesDataset = tf.data.csv("http://127.0.0.1:8080/kc_house_data.csv");
             const sampleDataset = houseSalesDataset.take(10);
@@ -70,6 +83,9 @@
 
             const [trainingFeatureTensor, testingFeatureTensor] = tf.split(normalisedFeature.tensor, 2)
             const [trainingLabelTensor, testingLabelTensor] = tf.split(normalisedLabel.tensor, 2)
+
+            createModel()
+
             trainingFeatureTensor.print(true)
 
             denormalise(normalisedFeature.tensor, normalisedFeature.min, normalisedFeature.max).print()
