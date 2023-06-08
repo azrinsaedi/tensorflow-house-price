@@ -53,6 +53,24 @@
                 return model;
             }
 
+            async function trainModel(model, trainingFeatureTensor, trainingLabelTensor){
+
+                const { onBatchEnd, onEpochEnd } = tfvis.show.fitCallbacks(
+                    { name: "Training Performance" },
+                    [ 'loss' ] 
+                )
+                return model.fit(trainingFeatureTensor, trainingLabelTensor, {
+                    batchSize: 512,
+                    epochs: 20,
+                    validationSplit: 0.2,
+                    callbacks: {
+                        onBatchEnd, onEpochEnd
+                        // onEpochEnd: (epoch, log) => console.log(`Epoch: ${epoch}: loss = ${log.loss}`)
+                    }
+                });
+
+            }
+
             async function run () {
             const houseSalesDataset = tf.data.csv("http://127.0.0.1:8080/kc_house_data.csv");
             const sampleDataset = houseSalesDataset.take(10);
@@ -97,6 +115,18 @@
             tfvis.show.modelSummary({ name: "Model Summary"}, model);
             const layer = model.getLayer(undefined, 0);
             tfvis.show.layer({name: "Layer 1"}, layer)
+
+            const result = await trainModel(model, trainingFeatureTensor, trainingLabelTensor)
+            console.log(result)
+            const trainingLoss = result.history.loss.pop()
+            console.log(`Training set loss: ${trainingLoss}`)
+
+            const validationLoss = result.history.val_loss.pop()
+            console.log(`Validation set loss: ${validationLoss}`)
+
+            const lossTensor = model.evaluate(testingFeatureTensor, testingLabelTensor)
+            const loss = await lossTensor.dataSync()
+            console.log(`Testing set loss: ${loss}`)
 
             // trainingFeatureTensor.print(true)
 
