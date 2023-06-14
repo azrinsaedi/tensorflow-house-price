@@ -75,6 +75,32 @@
 
             }
 
+            const storageID = "kc-house-price-regression"
+            async function save() {
+              const saveResults = await model.save(`localstorage://${storageID}`);
+              document.getElementById("model-status").innerHTML = `Trained (saved ${savedResults.modelArtifactsInfo.dateSaved})`;
+            }
+
+            async function load() {
+              const storageKey = `localstorage://${storageID}`;
+              const models = await tf.io.listModels();
+              const modelInfo = models[storageKey];
+
+              if (modelInfo) {
+                model = await tf.loadLayersModel(storageKey);
+
+                tfvis.show.modelSummary({ name: "Model Summary"}, model);
+                const layer = model.getLayer(undefined, 0);
+                tfvis.show.layer({name: "Layer 1"}, layer);
+
+                document.getElementById("model-status").innerHTML = `Trained (saved ${modelInfo.dateSaved})`;
+                document.getElementById("test-button").removeAttribute("disabled");
+                document.getElementById("predict-button").removeAttribute("disabled");
+              }
+              else{
+                alert("Could not load: no saved model found.")
+              }
+            }
             async function test(){
               const lossTensor = model.evaluate(testingFeatureTensor, testingLabelTensor)
               const loss = await lossTensor.dataSync()
@@ -94,7 +120,7 @@
               // model.summary()
               tfvis.show.modelSummary({ name: "Model Summary"}, model);
               const layer = model.getLayer(undefined, 0);
-              tfvis.show.layer({name: "Layer 1"}, layer)
+              tfvis.show.layer({name: "Layer 1"}, layer);
 
               const result = await trainModel(model, trainingFeatureTensor, trainingLabelTensor)
               console.log(result)
@@ -115,6 +141,7 @@
               + `Validation loss: ${validationLoss.toPrecision(5)}`;
 
               document.getElementById("test-button").removeAttribute("disabled");
+              document.getElementById("save-button").removeAttribute("disabled");
             }
 
             async function toggleVisor(){
@@ -167,6 +194,7 @@
 
             document.getElementById("model-status").innerHTML = "No Medel trained";
             document.getElementById("train-button").removeAttribute("disabled");
+            document.getElementById("load-button").removeAttribute("disabled");
 
             }
 
